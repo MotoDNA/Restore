@@ -916,12 +916,12 @@ nav.tabs button:active{opacity:.6}
     <form id="gateForm" autocomplete="on">
       <div class="field">
         <label for="g-code">회사 코드</label>
-        <input id="g-code" name="organization" placeholder="예: GUDORO" autocapitalize="characters"
+        <input id="g-code" name="organization" placeholder="예: ABCDEF" autocapitalize="characters"
                autocorrect="off" spellcheck="false" maxlength="12">
       </div>
       <div class="field">
         <label for="g-id">아이디</label>
-        <input id="g-id" name="username" placeholder="예: admin" autocapitalize="off"
+        <input id="g-id" name="username" placeholder="예: gdhong" autocapitalize="off"
                autocorrect="off" spellcheck="false" autocomplete="username">
       </div>
       <div class="field">
@@ -1158,9 +1158,9 @@ const TITLE    = { rebind:'프로젝트별 공정 관리', recall:'고객관리'
 const GATE = {
   rebind : {code:'예: ABCDEF', id:'예: gdhong', sub:'',
             foot:'계정은 <b>회사 관리자</b>가 만들어 줍니다.<br>고객사 담당자는 계정 없이 <b>공유 링크</b>로 보십니다.'},
-  recall : {code:'예: ABCDEF', id:'예: gdhong', sub:'회사에서 받은 코드와 아이디로 들어옵니다',
+  recall : {code:'예: ABCDEF', id:'예: gdhong', sub:'',
             foot:'계정은 <b>회사 관리자</b>가 만들어 줍니다.<br>비밀번호를 잊으셨다면 관리자에게 재발급을 요청하세요.'},
-  restore: {code:'예: GUDORO', id:'예: admin', sub:'',
+  restore: {code:'예: ABCDEF', id:'예: gdhong', sub:'',
             foot:'계정은 <b>본사 관리자</b>가 만들어 줍니다.<br>가맹점 점주는 계정 없이 <b>발주 링크</b>로 들어옵니다.'},
 };
 
