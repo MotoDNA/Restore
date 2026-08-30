@@ -315,6 +315,7 @@ Re:Bind 도 처음에 똑같았고, 나중에 금액을 딴 표(`project_money`)
 
 | | |
 |---|---|
+| `word-break:keep-all` | 혼자 두면 띄어쓰기 없는 긴 것(주소·링크)에 가로 스크롤이 생깁니다. `overflow-wrap:break-word` 를 **꼭 같이**. 낡은 `word-break:break-word` 는 keep-all 을 무너뜨리니 쓰지 마세요 |
 | `ALLOWED_ORIGIN` | 넷을 다 적고 **되읽어 확인**. 틀려도 조용합니다 |
 | `store-gate` 배포 | `--no-verify-jwt` 를 빼면 점주가 못 들어옵니다 |
 | 단가 | **점주 화면이 보낸 값을 절대 믿지 마세요.** 서버가 품목표에서 꺼냅니다 |

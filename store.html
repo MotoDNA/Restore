@@ -42,6 +42,18 @@ body{
   font-family:Pretendard,-apple-system,BlinkMacSystemFont,"Apple SD Gothic Neo",sans-serif;
   font-size:1rem; line-height:1.5; letter-spacing:-.02em;
   overscroll-behavior-y:none;
+  /* 브라우저 기본값은 한글을 **아무 글자에서나** 자릅니다.
+     "계약합니 / 다." 처럼 낱말이 두 줄로 쪼개져 읽다가 걸립니다.
+     keep-all 은 띄어쓰기에서만 넘깁니다.
+
+     대신 띄어쓰기 없는 긴 것(주소·발주번호·영문 한 덩어리)이 칸보다 길면
+     삐져나가므로 overflow-wrap 을 함께 둡니다. **둘을 같이 써야 합니다** —
+     keep-all 만 두면 긴 링크 하나에 가로 스크롤이 생깁니다.
+
+     주소·코드처럼 아무 데서나 잘려도 되는 자리는 그 자리에서
+     word-break:break-all 로 따로 못 박아 두었습니다. 그쪽이 이깁니다. */
+  word-break:keep-all;
+  overflow-wrap:break-word;
 }
 button,input,textarea,select{font-family:inherit;font-size:1rem;color:inherit;letter-spacing:-.02em}
 button{cursor:pointer;border:0;background:none;padding:0;color:inherit;-webkit-user-select:none;user-select:none}
@@ -600,7 +612,7 @@ nav.tabs button:active{opacity:.6}
    그만큼 표 전체가 종이보다 넓어져 오른쪽 칸이 잘려 나갑니다.
    화면(794px)에서는 여유가 있어 안 보이다가 인쇄(A4 190mm ≈ 718px)에서 드러납니다. */
 .paper table{width:100%;border-collapse:collapse;table-layout:fixed}
-.paper th,.paper td{overflow-wrap:anywhere;word-break:break-word}
+.paper th,.paper td{overflow-wrap:anywhere}
 .paper .parties{table-layout:fixed;margin-bottom:16px}
 .paper .parties>tbody>tr>td{vertical-align:top;width:50%;padding:0}
 .paper .parties>tbody>tr>td:first-child{padding-right:9px}
