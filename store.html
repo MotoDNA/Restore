@@ -439,6 +439,18 @@ nav.tabs button:active{opacity:.6}
   transition:transform .22s cubic-bezier(.4,0,.2,1);
 }
 #gate .pick.right .thumb{transform:translateX(100%)}
+/* 세 칸일 때. 이 덩어리는 PC 미디어쿼리보다 **앞에** 있어야 합니다 —
+   CSS 는 세기가 같으면 뒤에 온 것이 이깁니다. 예전에 파일 뒤쪽에 있어서
+   PC 규칙이 통째로 무시됐고, 토글이 다른 두 앱보다 12px 낮았습니다. */
+/* ───── 로그인 화면의 서비스 고르기가 셋이 됐습니다 ───── */
+#gate .pick.three{grid-template-columns:repeat(3,1fr)}
+#gate .pick.three .thumb{width:calc((100% - 12px)/3)}
+#gate .pick.i1 .thumb{transform:translateX(100%)}
+#gate .pick.i2 .thumb{transform:translateX(200%)}
+#gate .pick.three .opt{padding:14px 6px 15px}
+#gate .pick.three .opt b{font-size:.98rem;margin:7px 0 4px}
+#gate .pick.three .opt i{font-size:.68rem;line-height:1.5}
+#gate .pick #pick-restore.on b em{color:#FF7A1A}
 #gate .pick .opt{
   position:relative;z-index:1;background:none;border:0;margin:0;padding:15px 9px 16px;
   font:inherit;color:#5C6675;cursor:pointer;text-align:center;border-radius:12px;
@@ -505,6 +517,9 @@ nav.tabs button:active{opacity:.6}
   #gate .pick .opt svg{width:26px;height:26px}
   #gate .pick .opt b{font-size:1.16rem;margin:10px 0 6px}
   #gate .pick .opt i{font-size:.79rem}
+  #gate .pick.three .opt{padding:18px 10px 19px}
+  #gate .pick.three .opt b{font-size:1.05rem}
+  #gate .pick.three .opt i{font-size:.73rem}
   #gate h1{font-size:1.5rem;margin-bottom:18px}
   #gate .foot{margin-top:18px}
   /* 오른쪽 칸이 이미 상자라 안내문은 가운데로 모읍니다 */
@@ -708,15 +723,6 @@ nav.tabs button:active{opacity:.6}
    생김새를 맞추려고 통째로 물려받았습니다. 아래만 이 앱 것입니다.
    ═══════════════════════════════════════════════════════════ */
 
-/* ───── 로그인 화면의 서비스 고르기가 셋이 됐습니다 ───── */
-#gate .pick.three{grid-template-columns:repeat(3,1fr)}
-#gate .pick.three .thumb{width:calc((100% - 12px)/3)}
-#gate .pick.i1 .thumb{transform:translateX(100%)}
-#gate .pick.i2 .thumb{transform:translateX(200%)}
-#gate .pick.three .opt{padding:14px 6px 15px}
-#gate .pick.three .opt b{font-size:.98rem;margin:7px 0 4px}
-#gate .pick.three .opt i{font-size:.68rem;line-height:1.5}
-#gate .pick #pick-restore.on b em{color:#FF7A1A}
 
 /* ───── 발주서 카드 ───── */
 .ord{background:#fff;border-radius:var(--r2);box-shadow:var(--sh);padding:16px 18px;margin-bottom:11px;
@@ -886,6 +892,7 @@ nav.tabs button:active{opacity:.6}
    </div>
    <div class="gright">
     <h1 id="gateTitle">가맹점 발주와 정산</h1>
+    <p class="sub" id="gateSub" hidden></p>
     <form id="gateForm" autocomplete="on">
       <div class="field">
         <label for="g-code">회사 코드</label>
@@ -1123,6 +1130,20 @@ const APP_KEY = 'restore';
 const APPS     = ['rebind','recall','restore'];
 const APP_KO   = { rebind:'Re:Bind', recall:'Re:Call', restore:'Re:Store' };
 const TITLE    = { rebind:'프로젝트별 공정 관리', recall:'고객관리', restore:'가맹점 발주와 정산' };
+/* 로그인 화면에서 서비스마다 다른 것들.
+   토글이 제목만 바꾸고 예시 글자·꼬리말은 그 앱 것으로 남아 있었습니다.
+   그래서 /bind 에서 Re:Store 를 고르면 제목은 "가맹점 발주와 정산" 인데
+   회사 코드 예시는 "예: ABCDEF", 꼬리말은 "고객사 담당자는 공유 링크로" 였습니다.
+   한 화면에 두 서비스의 말이 섞여 있으면 어느 쪽으로 들어가는지 헷갈립니다. */
+const GATE = {
+  rebind : {code:'예: ABCDEF', id:'예: gdhong', sub:'',
+            foot:'계정은 <b>회사 관리자</b>가 만들어 줍니다.<br>고객사 담당자는 계정 없이 <b>공유 링크</b>로 보십니다.'},
+  recall : {code:'예: ABCDEF', id:'예: gdhong', sub:'회사에서 받은 코드와 아이디로 들어옵니다',
+            foot:'계정은 <b>회사 관리자</b>가 만들어 줍니다.<br>비밀번호를 잊으셨다면 관리자에게 재발급을 요청하세요.'},
+  restore: {code:'예: GUDORO', id:'예: admin', sub:'',
+            foot:'계정은 <b>본사 관리자</b>가 만들어 줍니다.<br>가맹점 점주는 계정 없이 <b>발주 링크</b>로 들어옵니다.'},
+};
+
 const ONE_ROOF = { rebind:'/bind', recall:'/call', restore:'/store' };
 const AWAY     = { rebind:'https://rebind.dnalabs.kr/',
                    recall:'https://recall.dnalabs.kr/',
@@ -1344,6 +1365,13 @@ function setPick(app,remember){
   $('gateForm').hidden  = !여기서로그인;
   $('gateOther').hidden = 여기서로그인;
   $('gateFoot').hidden  = !여기서로그인;
+  /* 예시 글자와 꼬리말까지 고른 서비스 것으로 바꿉니다 */
+  const g = GATE[pickApp];
+  $('g-code').placeholder = g.code;
+  $('g-id').placeholder   = g.id;
+  $('gateFoot').innerHTML = g.foot;
+  $('gateSub').innerHTML  = g.sub;
+  $('gateSub').hidden     = !(g.sub && 여기서로그인);
   $('g-go').textContent = mine ? '들어가기' : (APP_KO[pickApp]+' 로 들어가기');
   $('g-other').textContent = APP_KO[pickApp]+' 열기';
   const note=$('gateOther').querySelector('.othernote');
@@ -1361,7 +1389,11 @@ function sayBounced(){
 
 function showGate(){
   $('gate').hidden=false; $('pub').hidden=true; $('app').hidden=true;
-  setPick(loadPick(), false);
+  /* 한 지붕 아래에서는 **주소가 곧 선택**입니다.
+     /call 을 쳐서 들어왔는데 지난번에 고른 /store 가 떠 있으면,
+     주소를 치고 들어온 뜻이 무시됩니다. 실제로 그렇게 헷갈렸습니다.
+     기억은 옛 주소에서만 씁니다 — 거기는 주소가 어느 서비스인지 안 알려 줍니다. */
+  setPick(underOneRoof ? APP_KEY : loadPick(), false);
   setTimeout(()=>{ const c=$('g-code'); if(c&&!c.value) c.focus(); },80);
 }
 function showApp(){
