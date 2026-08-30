@@ -1,0 +1,9 @@
+{
+  "_설명": "앱이 접속할 주소와 공개 키입니다. 이 두 값은 브라우저에 그대로 들어가는 공개 정보입니다.",
+  "_경고": "secret 키(sb_secret_...)와 service_role 키는 절대 이 파일이나 앱에 넣지 마세요. 서버 함수의 환경변수에만 둡니다.",
+  "projectRef": "izrtclsqhsgkuwsffifn",
+  "url": "https://izrtclsqhsgkuwsffifn.supabase.co",
+  "publishableKey": "sb_publishable_G5wx-YdgwUU630x1vKmZmQ_15BgxvEX",
+  "region": "ap-northeast-2 (서울)",
+  "functionsBase": "https://izrtclsqhsgkuwsffifn.supabase.co/functions/v1"
+}
