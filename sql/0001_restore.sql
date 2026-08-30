@@ -330,6 +330,27 @@ create policy lines_delete on public.order_lines
   );
 
 -- ═══════════════════════════════════════════════════════════════
+-- 표를 쓸 수 있게 권한을 줍니다
+--
+-- ⚠ 빠뜨리기 쉽고, 빠뜨리면 증상이 엉뚱합니다 — 표도 있고 규칙도 맞는데
+--   목록이 텅 비고 점주 링크는 "없는 주소입니다" 가 됩니다. 실제로 겪었습니다.
+--   이 프로젝트는 Supabase 기본 권한에 기대지 않습니다. Re:Call·Re:Bind 의
+--   표에도 모두 이렇게 일일이 붙어 있습니다.
+--
+--   권한은 바깥문, RLS 는 안쪽문입니다. 바깥문이 잠겨 있으면
+--   안쪽 규칙을 볼 기회조차 없습니다.
+-- ═══════════════════════════════════════════════════════════════
+grant select, insert, update, delete on public.stores       to authenticated;
+grant select, insert, update, delete on public.supply_items to authenticated;
+grant select, insert, update, delete on public.orders       to authenticated;
+grant select, insert, update, delete on public.order_lines  to authenticated;
+
+grant all privileges on public.stores       to service_role;
+grant all privileges on public.supply_items to service_role;
+grant all privileges on public.orders       to service_role;
+grant all privileges on public.order_lines  to service_role;
+
+-- ═══════════════════════════════════════════════════════════════
 -- 품목 사진 보관함
 -- 경로가 {회사id}/{품목id}/… 라서 폴더 이름이 곧 권한입니다.
 -- Re:Bind 의 works 보관함과 같은 방식입니다.
