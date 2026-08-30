@@ -425,7 +425,6 @@ nav.tabs button:active{opacity:.6}
    위에도 Re:Bind 를 적어 두면 고르기 전부터 한쪽으로 정해 놓은 꼴이 됩니다. */
 #gate .mark{display:flex;flex-direction:column;align-items:center;gap:10px;margin-bottom:22px}
 #gate .mark .logo{width:76px;height:76px;box-shadow:0 0 0 1px rgba(255,255,255,.10)}
-#gate .mark .co{font-size:.82rem;font-weight:700;letter-spacing:.14em;color:#6B7684;text-transform:uppercase}
 
 /* ───── 어느 서비스로 들어갈지 ─────
    좌우 두 칸이 그대로 누르는 자리입니다. 뒤에서 미끄러지는 판(thumb)이
@@ -499,9 +498,8 @@ nav.tabs button:active{opacity:.6}
     border-radius:20px;padding:30px 30px 26px;
   }
   /* 왼쪽은 자리가 넉넉하니 마크와 고르는 칸을 키웁니다 */
-  #gate .mark{align-items:flex-start;margin-bottom:26px;gap:12px}
+  #gate .mark{align-items:center;margin-bottom:26px;gap:12px}
   #gate .mark .logo{width:88px;height:88px}
-  #gate .mark .co{font-size:.86rem}
   #gate .pick{margin-bottom:0}
   #gate .pick .opt{padding:20px 14px 21px}
   #gate .pick .opt svg{width:26px;height:26px}
@@ -523,7 +521,6 @@ nav.tabs button:active{opacity:.6}
 @media (max-height:790px) and (max-width:899px){
   #gate .mark{gap:7px;margin-bottom:16px}
   #gate .mark .logo{width:58px;height:58px}
-  #gate .mark .co{font-size:.76rem}
   #gate .pick{margin-bottom:17px}
   #gate .pick .opt{padding:11px 9px 12px}
   #gate .pick .opt b{margin:6px 0 4px}
@@ -868,7 +865,6 @@ nav.tabs button:active{opacity:.6}
    <div class="gleft">
     <div class="mark">
       <i class="logo" role="img" aria-label="DNA Labs"></i>
-      <span class="co">DNA Labs</span>
     </div>
     <!-- 누르면 고르기만 하고 넘어가지는 않습니다 —
          비밀번호를 엉뚱한 앱에 치는 일이 없어야 합니다. -->
@@ -876,7 +872,7 @@ nav.tabs button:active{opacity:.6}
       <span class="thumb" aria-hidden="true"></span>
       <button type="button" class="opt" id="pick-rebind" data-app="rebind" role="tab" aria-selected="false">
         <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M5 4h11a2 2 0 0 1 2 2v14H7a2 2 0 0 1-2-2z"/><path d="M5 17h13"/><path d="M9 8h5M9 11h5"/></svg>
-        <b>Re<em>:</em>Bind</b><i>제조 공정<br>접수부터 청구까지</i>
+        <b>Re<em>:</em>Bind</b><i>프로젝트별 공정 관리<br>접수부터 청구까지</i>
       </button>
       <button type="button" class="opt" id="pick-recall" data-app="recall" role="tab" aria-selected="false">
         <svg viewBox="0 0 24 24" aria-hidden="true"><rect x="3" y="5" width="18" height="14" rx="2.5"/><circle cx="9" cy="11" r="2"/><path d="M6 16c.6-1.4 1.7-2 3-2s2.4.6 3 2"/><path d="M15 10h4M15 13.5h3"/></svg>
@@ -1110,6 +1106,33 @@ nav.tabs button:active{opacity:.6}
      없으면                → 본사 화면 (회사 코드·아이디·비밀번호)
    ═══════════════════════════════════════════════════════════════ */
 const APP_KEY = 'restore';
+
+/* ───── 세 서비스가 어디에 놓여 있는가 ─────
+   브라우저는 로그인한 흔적을 **주소마다 따로** 보관합니다. 그래서
+   restore.dnalabs.kr 에서 로그인해도 rebind.dnalabs.kr 은 모릅니다.
+
+   dnalabs.kr/bind · /call · /store 로 함께 올려 두면 주소가 하나라
+   그 흔적을 나눠 씁니다 — 한 번 로그인하면 산 것은 다 열립니다.
+
+   옛 주소로 들어온 사람에게는 지금까지처럼 굴어야 합니다. 그쪽은 주소가
+   달라 흔적을 못 넘기고, 그래서 다른 것을 고르면 로그인 칸을 감추고
+   이동 단추만 보여 줍니다 — 엉뚱한 앱에 비밀번호를 치지 않도록.
+
+   차례가 곧 토글에 놓이는 차례입니다. 세 앱이 같아야 같은 자리를 눌렀을 때
+   같은 것이 골라집니다. */
+const APPS     = ['rebind','recall','restore'];
+const APP_KO   = { rebind:'Re:Bind', recall:'Re:Call', restore:'Re:Store' };
+const TITLE    = { rebind:'프로젝트별 공정 관리', recall:'고객관리', restore:'가맹점 발주와 정산' };
+const ONE_ROOF = { rebind:'/bind', recall:'/call', restore:'/store' };
+const AWAY     = { rebind:'https://rebind.dnalabs.kr/',
+                   recall:'https://recall.dnalabs.kr/',
+                   restore:'https://restore.dnalabs.kr/' };
+const PICK_KEY   = 'dnalabs-app';
+const BOUNCE_KEY = 'dnalabs-bounced';
+const underOneRoof = ONE_ROOF[APP_KEY] === location.pathname.replace(/\/+$/,'');
+const urlFor = a => underOneRoof ? ONE_ROOF[a] : AWAY[a];
+const otherOwned = apps => APPS.find(a => a!==APP_KEY && (apps||[]).includes(a));
+let pickApp = APP_KEY;
 const $  = (id)=>document.getElementById(id);
 const $$ = (s,r)=>Array.from((r||document).querySelectorAll(s));
 const esc = (s)=>String(s??'').replace(/[&<>"']/g,(c)=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
@@ -1185,9 +1208,18 @@ async function loadMe(){
      막힌 채로 앱에 들어가 빈 화면을 보게 두지 않으려는 것입니다 —
      그러면 자료가 사라진 줄 압니다. */
   if(!apps.includes(APP_KEY)){
+    /* 한 지붕 아래면 산 것이 바로 옆에 있습니다. 내쫓지 않고 그리로 보냅니다 —
+       흔적을 나눠 쓰므로 그쪽에서 다시 묻지 않습니다.
+       왜 옮겨졌는지 한 마디 남깁니다. 아무 말 없이 딴 화면이 뜨면
+       주소를 잘못 친 줄 알거나 무시당한 줄 압니다. */
+    const 옆에있는것 = otherOwned(apps);
+    if(underOneRoof && 옆에있는것){
+      try{ sessionStorage.setItem(BOUNCE_KEY, APP_KEY) }catch(e){}
+      location.replace(ONE_ROOF[옆에있는것]);
+      return {ok:false, moved:true};
+    }
     await sb.auth.signOut(); me=null;
-    const other = apps.includes('rebind') ? ' Re:Bind 로 들어가 주세요.'
-                : apps.includes('recall') ? ' Re:Call 로 들어가 주세요.' : ' 담당자에게 문의해 주세요.';
+    const other = 옆에있는것 ? ' '+APP_KO[옆에있는것]+' 로 들어가 주세요.' : ' 담당자에게 문의해 주세요.';
     return {ok:false, wrongApp:true,
       error:(co&&co.name?co.name+' 은(는) ':'이 회사는 ')+'Re:Store 를 쓰는 회사가 아닙니다.'+other};
   }
@@ -1279,8 +1311,49 @@ const STORE_LABEL={open:'영업',pause:'휴업',closed:'폐점'};
    ═══════════════════════════════════════════════════════════════ */
 let page='orders', ordFilter='', ordQ='', stQ='', itQ='', itCat='';
 
+/* 고른 것은 이 기기에 남깁니다. 다음에 와도 그 자리에서 시작합니다 —
+   매번 다시 고르게 하면 토글을 둔 뜻이 없습니다. */
+function loadPick(){
+  try{ const v=localStorage.getItem(PICK_KEY); if(APPS.includes(v)) return v }catch(e){}
+  return APP_KEY;
+}
+function setPick(app,remember){
+  pickApp = APPS.includes(app) ? app : APP_KEY;
+  if(remember!==false){ try{ localStorage.setItem(PICK_KEY,pickApp) }catch(e){} }
+  const mine = pickApp===APP_KEY;
+  const pick=$('appPick');
+  pick.classList.remove('i0','i1','i2');
+  pick.classList.add('i'+APPS.indexOf(pickApp));
+  for(const key of APPS){
+    const b=$('pick-'+key); if(!b) continue;
+    b.classList.toggle('on', pickApp===key);
+    b.setAttribute('aria-selected', String(pickApp===key));
+  }
+  $('gateTitle').textContent = TITLE[pickApp];
+  /* 한 지붕 아래면 여기서 로그인해도 저쪽이 열립니다 — 칸을 그대로 둡니다.
+     주소가 다르면 넘겨줄 수 없으니 칸을 감추고 이동 단추만 보여 줍니다. */
+  const 여기서로그인 = mine || underOneRoof;
+  $('gateForm').hidden  = !여기서로그인;
+  $('gateOther').hidden = 여기서로그인;
+  $('gateFoot').hidden  = !여기서로그인;
+  $('g-go').textContent = mine ? '들어가기' : (APP_KO[pickApp]+' 로 들어가기');
+  $('g-other').textContent = APP_KO[pickApp]+' 열기';
+  const note=$('gateOther').querySelector('.othernote');
+  if(note) note.innerHTML = APP_KO[pickApp]+' 는 <b>다른 주소</b>에서 엽니다.<br>회사 코드와 아이디는 여기와 같습니다.';
+  $('gateMsg').textContent='';
+}
+
+/* 옆 앱에서 되돌아왔으면 왜 왔는지 알려 줍니다. 한 번만 보여 주고 지웁니다. */
+function sayBounced(){
+  let from=null;
+  try{ from=sessionStorage.getItem(BOUNCE_KEY); sessionStorage.removeItem(BOUNCE_KEY) }catch(e){}
+  if(!from || from===APP_KEY) return;
+  toast((APP_KO[from]||from)+' 은 이 회사가 쓰는 서비스가 아닙니다');
+}
+
 function showGate(){
   $('gate').hidden=false; $('pub').hidden=true; $('app').hidden=true;
+  setPick(loadPick(), false);
   setTimeout(()=>{ const c=$('g-code'); if(c&&!c.value) c.focus(); },80);
 }
 function showApp(){
@@ -2389,20 +2462,8 @@ document.addEventListener('click', async (e)=>{
 
   /* ── 서비스 고르기 (로그인 화면) ── */
   const opt=t.closest('#appPick .opt');
-  if(opt){
-    const app=opt.dataset.app;
-    $$('#appPick .opt').forEach(b=>{ b.classList.toggle('on',b===opt); b.setAttribute('aria-selected',String(b===opt)); });
-    const idx=['rebind','recall','restore'].indexOf(app);
-    $('appPick').classList.remove('i0','i1','i2'); $('appPick').classList.add('i'+idx);
-    const other = app!=='restore';
-    $('gateForm').hidden=other; $('gateFoot').hidden=other; $('gateOther').hidden=!other;
-    $('gateTitle').textContent = app==='rebind'?'제조 공정과 명세서' : app==='recall'?'고객관리' : '가맹점 발주와 정산';
-    $('g-other').textContent = (app==='rebind'?'Re:Bind':'Re:Call')+' 열기';
-    $('g-other').dataset.url = app==='rebind'?'https://rebind.dnalabs.kr/':'https://recall.dnalabs.kr/';
-    $('gateMsg').textContent='';
-    return;
-  }
-  if(t.closest('#g-other')){ location.href=t.closest('#g-other').dataset.url||'/'; return; }
+  if(opt){ setPick(opt.dataset.app); return; }
+  if(t.closest('#g-other')){ location.href=urlFor(pickApp); return; }
 
   /* ── 아래 탭 ── */
   const tab=t.closest('#tabsIn button');
@@ -2567,16 +2628,26 @@ document.addEventListener('scroll',()=>{
     $('g-go').disabled=false;
     if(!r.ok){ $('gateMsg').textContent=r.error||'들어가지 못했습니다.'; return; }
     $('g-pw').value='';
+    /* 한 지붕 아래에서 다른 것을 골라 두었으면 그대로 넘겨 줍니다.
+       흔적을 나눠 쓰므로 그쪽에서 다시 묻지 않습니다. */
+    if(pickApp!==APP_KEY){
+      if((me.apps||[]).includes(pickApp)){ location.href=urlFor(pickApp); return }
+      const 고른것=APP_KO[pickApp];
+      setPick(APP_KEY);
+      $('gateMsg').textContent=(me.companyName||'이 회사')+' 은(는) '+고른것+' 를 쓰는 회사가 아닙니다. '+APP_KO[APP_KEY]+' 로 들어가시면 됩니다.';
+      return;
+    }
     const d=await pull();
     if(!d.ok){ $('gateMsg').textContent='자료를 불러오지 못했습니다: '+(d.error||''); return; }
-    showApp(); startLive();
+    showApp(); startLive(); sayBounced();
   });
 
   /* 이미 들어와 있으면 그대로 엽니다 */
   const r=await loadMe();
+  if(r.moved) return;              // 옆 앱으로 넘어가는 중입니다. 화면을 그리지 않습니다
   if(r.ok){
     const d=await pull();
-    if(d.ok){ showApp(); startLive(); return; }
+    if(d.ok){ showApp(); startLive(); sayBounced(); return; }
   }
   showGate();
   if(r.wrongApp) $('gateMsg').textContent=r.error;
