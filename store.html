@@ -131,6 +131,8 @@ textarea.inp{padding:14px;height:auto;min-height:88px;line-height:1.55}
 .readnote{background:var(--amber-bg);color:var(--amber);border-radius:14px;padding:13px 16px;
   font-size:.84rem;font-weight:600;line-height:1.55;margin-bottom:14px}
 .readnote b{font-weight:800}
+/* 그냥 알림(주황)과 구분합니다 — 이건 고쳐야 하는 것입니다 */
+.readnote.warn{background:var(--red-bg);color:var(--red);margin-top:10px}
 .inp.num{text-align:right;font-variant-numeric:tabular-nums}
 /* 고르는 칸 — 오른쪽에 화살표를 그려 넣습니다 (기본 화살표를 껐기 때문에) */
 select.inp{
@@ -962,7 +964,7 @@ nav.tabs button:active{opacity:.6}
   <div id="pinPane" hidden>
     <i class="logo" role="img" aria-label="DNA Labs"></i>
     <h2 id="pinTitle">발주하기</h2>
-    <p>본사에서 알려 준 <b>숫자 네 자리</b>를 넣어 주세요.</p>
+    <p>본사에서 알려 준 <b>숫자</b>를 넣어 주세요.</p>
     <form id="pinForm">
       <input id="pinInp" inputmode="numeric" pattern="[0-9]*" maxlength="8" placeholder="0000"
              autocomplete="off" aria-label="핀">
@@ -1524,7 +1526,7 @@ function renderStores(){
   $('stSub').textContent = stores.length ? `${stores.length}개 점포 · 영업 중 ${open}곳` : '아직 등록한 점포가 없습니다';
   if(!list.length){
     $('stList').innerHTML=`<div class="empty"><div class="big">${q?'해당하는 점포가 없습니다':'아직 점포가 없습니다'}</div>
-      <p>${q?'다른 말로 찾아보세요.':'점포를 넣으면 그 점포만의 <b>발주 링크</b>가 만들어집니다.<br>점주에게 그 링크와 핀 네 자리를 알려 주면 됩니다.'}</p></div>`;
+      <p>${q?'다른 말로 찾아보세요.':'점포를 넣으면 그 점포만의 <b>발주 링크</b>가 만들어집니다.<br>점주에게 그 링크와 핀을 알려 주면 됩니다.'}</p></div>`;
     return;
   }
   $('stList').innerHTML=list.map(s=>{
@@ -1769,9 +1771,19 @@ function mkToken(){
   const a=new Uint8Array(16); crypto.getRandomValues(a);
   return Array.from(a).map(b=>b.toString(16).padStart(2,'0')).join('');
 }
+/* 발주 링크의 핀.
+   네 자리(만 개)로 만들다가 여섯 자리(백만 개)로 올렸습니다.
+   링크가 새어 나갔을 때 마지막으로 남는 벽이 이것뿐인데, 만 개는 시간을
+   들이면 뚫립니다. 틀린 횟수는 pin_tries 표가 세지만(sql/0004),
+   자릿수 자체를 올려 두는 편이 확실합니다.
+
+   %1000000 은 값이 조금 치우칩니다(2^32 가 백만으로 안 나눠떨어집니다).
+   치우친 만큼은 버리고 다시 뽑습니다. */
 function mkPin(){
-  const a=new Uint32Array(1); crypto.getRandomValues(a);
-  return String(a[0]%10000).padStart(4,'0');
+  const a=new Uint32Array(1);
+  const 한계=Math.floor(4294967296/1000000)*1000000;
+  do { crypto.getRandomValues(a) } while(a[0]>=한계);
+  return String(a[0]%1000000).padStart(6,'0');
 }
 const storeLink=(s)=>location.origin+location.pathname+'?t='+s.share_token;
 
@@ -1845,6 +1857,10 @@ function openStore(id){
           <button class="btn sm" data-act="link-copy">복사</button>
         </div>
       </div>
+      ${s.pin && s.pin.length < 6 ? `<p class="readnote warn">
+        <b>핀이 ${s.pin.length}자리입니다.</b> 지금은 여섯 자리로 만듭니다 —
+        네 자리는 만 개뿐이라 링크가 새어 나가면 시간을 들여 뚫을 수 있습니다.
+        <b>핀 새로</b> 를 눌러 바꾸고 점주에게 알려 주세요.</p>` : ''}
       <div class="btnrow"><button class="btn ghost" data-act="link-sms">문자로 보내기</button></div>
     </div>
 
@@ -2623,7 +2639,7 @@ document.addEventListener('click', async (e)=>{
     await pull(); openStore(curStore.id); toast(on?'링크를 켰습니다':'링크를 껐습니다'); return;
   }
   if(a==='pin-new'){
-    if(!curStore||!confirm('핀을 새로 만들면 지금 핀은 못 씁니다. 점주에게 다시 알려 주셔야 합니다. 계속할까요?')) return;
+    if(!curStore||!confirm('핀을 여섯 자리로 새로 만듭니다.\n\n지금 핀은 그 자리에서 못 쓰게 됩니다.\n점주에게 새 핀을 알려 주셔야 합니다.\n\n계속할까요?')) return;
     await sb.from('stores').update({pin:mkPin()}).eq('id',curStore.id);
     await pull(); openStore(curStore.id); toast('핀을 새로 만들었습니다'); return;
   }
@@ -2636,7 +2652,7 @@ document.addEventListener('click', async (e)=>{
   }
   if(a==='link-sms'){
     if(!curStore||!curStore.share_token) return;
-    const body=`[${me.companyName}] 발주 링크입니다.\n${storeLink(curStore)}\n핀 ${curStore.pin}\n\n링크를 열고 핀 네 자리를 넣으면 발주하실 수 있습니다.`;
+    const body=`[${me.companyName}] 발주 링크입니다.\n${storeLink(curStore)}\n핀 ${curStore.pin}\n\n링크를 열고 핀을 넣으면 발주하실 수 있습니다.`;
     location.href='sms:'+(curStore.phone||'')+(navigator.userAgent.includes('Android')?'?':'&')+'body='+encodeURIComponent(body);
     return;
   }

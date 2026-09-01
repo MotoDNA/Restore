@@ -48,21 +48,34 @@ function tooMany(ip: string, cap = 60): boolean {
 
 // ───────── 핀을 틀린 횟수 ─────────
 // 점포별로 셉니다. 한 점포 링크에 매달려도 다른 점포는 멀쩡합니다.
-const bad = new Map<string, { n: number; at: number }>();
-function pinBlocked(token: string): boolean {
-  const cur = bad.get(token);
-  if (!cur) return false;
-  if (Date.now() - cur.at > 10 * 60_000) { bad.delete(token); return false; }
-  return cur.n >= 10;
+//
+// ⚠ 예전에는 이 함수의 **메모리**(Map)에 셌습니다. Edge Function 은 잠깐 쉬면
+//   내려갔다 새로 뜨는데, 그때 센 것이 0 으로 돌아갔습니다. 여러 대가 동시에
+//   돌면 각자 따로 셌고, 5000개가 넘으면 통째로 비우기까지 했습니다.
+//   그래서 "10번 틀리면 잠김" 이 실제로는 잘 안 걸렸습니다.
+//   지금은 pin_tries 표에 적습니다(sql/0004). **다시 메모리로 옮기지 마세요.**
+const MAX_MISS = 10;
+const LOCK_MIN = 10;
+
+async function pinBlocked(token: string): Promise<boolean> {
+  const { data } = await admin.from('pin_tries')
+    .select('n, at').eq('token', token).maybeSingle();
+  if (!data) return false;
+  if (Date.now() - new Date(data.at).getTime() > LOCK_MIN * 60_000) return false;
+  return Number(data.n) >= MAX_MISS;
 }
-function pinMissed(token: string) {
-  const cur = bad.get(token);
-  if (!cur || Date.now() - cur.at > 10 * 60_000) { bad.set(token, { n: 1, at: Date.now() }); return; }
-  cur.n++; cur.at = Date.now();
-  if (bad.size > 5000) bad.clear();
+async function pinMissed(token: string) {
+  // 읽고 나서 쓰면 동시에 두 번 찔렀을 때 둘 다 같은 값으로 읽고 지나갑니다.
+  // 한 문장으로 올리고 올라간 값을 받는 함수를 씁니다.
+  await admin.rpc('pin_miss', { p_token: token });
+}
+async function pinOk(token: string) {
+  // 맞혔으면 센 것을 지웁니다. 몇 번 헷갈렸다고 다음에 잠기면 안 됩니다.
+  await admin.from('pin_tries').delete().eq('token', token);
 }
 
-// 같은 길이만큼 비교합니다. 빨리 틀리는 것으로 자릿수를 알아내지 못하게.
+// 한 글자씩 다 비교합니다 — 몇 번째에서 틀렸는지를 걸린 시간으로 알아내지
+// 못하게. (자릿수 자체는 감추지 않습니다. 점주에게 "여섯 자리" 라고 알려 주는 값입니다.)
 function sameSecret(a: string, b: string): boolean {
   if (a.length !== b.length) return false;
   let d = 0;
@@ -106,11 +119,11 @@ Deno.serve(async (req) => {
 
   // ───────── 핀 확인 ─────────
   if (s.pin) {
-    if (pinBlocked(token)) return json({ ok: false, error: '잠시 뒤에 다시 해 주세요.', needPin: true }, 429);
+    if (await pinBlocked(token)) return json({ ok: false, error: '잠시 뒤에 다시 해 주세요.', needPin: true }, 429);
     if (!pin) return json({ ok: false, error: '핀을 넣어 주세요.', needPin: true }, 401);
-    if (!sameSecret(pin, s.pin)) { pinMissed(token); return json({ ok: false, error: '핀이 다릅니다.', needPin: true }, 401); }
+    if (!sameSecret(pin, s.pin)) { await pinMissed(token); return json({ ok: false, error: '핀이 다릅니다.', needPin: true }, 401); }
+    await pinOk(token);
   }
-  bad.delete(token);
 
   const closed = s.status === 'closed';
 
