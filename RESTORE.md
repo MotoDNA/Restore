@@ -25,17 +25,18 @@
 
 ---
 
-## 2. 형제 서비스 셋
+## 2. 형제 서비스 넷
 
-DNA Labs 서비스가 셋이고 **같은 Supabase 프로젝트·같은 계정 목록**을 씁니다.
+DNA Labs 서비스가 넷이고 **같은 Supabase 프로젝트·같은 계정 목록**을 씁니다.
 
 | 서비스 | 하는 일 | 새 주소 | 옛 주소 | 폴더 |
 |---|---|---|---|---|
 | Re:Bind | 프로젝트별 공정 관리 | `dnalabs.kr/bind` | `rebind.dnalabs.kr` | `~/Desktop/Rebind` |
 | Re:Call | 고객관리 | `dnalabs.kr/call` | `recall.dnalabs.kr` | `~/Desktop/network-dna` |
 | **Re:Store** | **가맹점 발주·정산** | `dnalabs.kr/store` | `restore.dnalabs.kr` | `~/Desktop/Restore` |
+| **Re:O-S** | 제작 외주관리 | `dnalabs.kr/os` | — | `~/Desktop/05_개발프로젝트/Reos` |
 
-**Re:Store 가 막내입니다.** `0001_init.sql`(Re:Call)에서 만든 도우미 함수를 그대로 씁니다.
+**Re:Store 밑으로 Re:O-S 가 하나 더 생겼습니다.** `0001_init.sql`(Re:Call)에서 만든 도우미 함수를 그대로 씁니다.
 
 ```
 current_company_id()   지금 로그인한 사람의 회사
@@ -43,10 +44,10 @@ is_admin()             관리자인가
 company_for_app(app)   그 서비스를 산 회사인가   ← ~/Desktop/Rebind/sql/0019_apps.sql
 ```
 
-⚠ **셋이 얽혀 있어 하나만 보고 고치면 다른 쪽이 멈추는 것 셋**
+⚠ **넷이 얽혀 있어 하나만 보고 고치면 다른 쪽이 멈추는 것 셋**
 1. `ALLOWED_ORIGIN` (6장) — **한 번 저절로 되돌아간 적이 있습니다**
 2. `companies.apps` (5장)
-3. 로그인 화면의 서비스 토글 — 세 앱이 같은 차례·같은 문구
+3. 로그인 화면의 서비스 토글 — **네 앱**이 같은 차례·같은 문구
 
 ---
 
@@ -63,7 +64,7 @@ sql/
   0003_grants.sql     표 권한 — 0001 에서 빠뜨렸던 것
 supabase/functions/
   store-gate/         ★ 가맹점 문지기 (--no-verify-jwt)
-  _shared/cors.ts     세 앱이 같은 파일을 씁니다
+  _shared/cors.ts     네 앱이 같은 파일을 씁니다
 manifest.webmanifest · icon-*.png     홈 화면 설치용
 ```
 
@@ -113,7 +114,7 @@ apps text[]   {rebind} · {recall} · {restore} · 여러 개 가능
 
 **비어 있으면 아무 데도 못 들어갑니다.** 새 회사를 만들 때 꼭 함께 넣으세요.
 
-지금: `ACTIVA {rebind,recall}` · `BKT {rebind}` · **`9DORO {restore}`**
+지금: `ACTIVA {rebind,recall,reos}` · `BKT {rebind}` · **`9DORO {restore}`** · `DNALABS {}`
 
 **화면이 아니라 데이터베이스가 막습니다.**
 `company_for_app('restore')` 가 산 서비스면 회사 id, 아니면 null 을 돌려주고
@@ -160,7 +161,7 @@ supabase secrets set ALLOWED_ORIGIN="https://rebind.dnalabs.kr,https://recall.dn
 
 바꾼 뒤 **함수를 모두 다시 배포**해야 반영됩니다 —
 `store-gate`(여기) · `share-view` `read-order`(Re:Bind) ·
-`read-card` `admin-user` `signup` `subscription`(Re:Call).
+`read-card` `admin-user` `signup` `subscription`(Re:Call) · `reos-gate`(Re:O-S) · `ops`(운영).
 
 **넣고 끝내지 말고 되읽어 확인하세요.**
 
@@ -222,21 +223,24 @@ Re:Store 를 팔려면 정해야 할 것 —
 
 ## 8. 로그인 화면
 
-세 서비스 토글. 세 앱이 **같은 차례·같은 문구**를 씁니다.
+**네 서비스** 토글. 네 앱이 **같은 차례·같은 문구**를 씁니다.
 
 ```js
-const APPS     = ['rebind','recall','restore'];
-const ONE_ROOF = {rebind:'/bind', recall:'/call', restore:'/store'};
+const APPS     = ['rebind','recall','restore','reos'];
+const ONE_ROOF = {rebind:'/bind', recall:'/call', restore:'/store', reos:'/os'};
 const underOneRoof = ONE_ROOF[APP_KEY] === location.pathname.replace(/\/+$/,'');
 ```
 
-서비스가 늘면 **세 파일에서 이 표에 한 줄씩** 더합니다.
+서비스가 늘면 **네 파일에서 이 표에 한 줄씩** 더합니다.
+
+토글이 넷이 되면서 390px 폰에서는 한 칸이 78px 밖에 안 남습니다.
+좁은 화면에서는 설명줄을 감추고 이름과 그림만 둡니다(`.pick.four`).
 
 | `dnalabs.kr/store` | 로그인 칸이 그대로. 여기서 로그인하고 그쪽으로 넘어갑니다 |
 |---|---|
 | `restore.dnalabs.kr` | 칸을 감추고 이동 단추만 — **엉뚱한 앱에 비밀번호를 치면 안 됩니다** |
 
-**로그인 정보는 세 서비스가 똑같습니다.** 보관 자리도 셋 다 `ndna-auth` 라
+**로그인 정보는 네 서비스가 똑같습니다.** 보관 자리도 넷 다 `ndna-auth` 라
 한 지붕(`dnalabs.kr/*`)에서는 한 번 로그인하면 산 것이 다 열립니다.
 
 - 안 산 것을 고르고 로그인하면 → 토글을 되돌리고 "○○ 를 쓰는 회사가 아닙니다"
@@ -284,7 +288,7 @@ io.open('/tmp/app.js','w',encoding='utf-8').write(re.findall(r'<script>(.*?)</sc
 | 서버 함수 | `supabase functions deploy store-gate --no-verify-jwt --project-ref izrtclsqhsgkuwsffifn` |
 | SQL | `supabase db query --linked -f sql/000N_….sql` |
 | rewrite (`/store`) | `cd ~/Desktop/network-dna && npx vercel --prod --scope chhanj40-5991s-projects` |
-| 로고 | `python3 ~/Desktop/Rebind/make-logo.py` → 세 앱에 함께. **저장소 셋을 각각 커밋** |
+| 로고 | `python3 ~/Desktop/05_개발프로젝트/Rebind/make-logo.py` → 네 앱에 함께. **저장소 넷을 각각 커밋** |
 
 `dnalabs.kr/store` 는 rewrite 라 **GitHub Pages 만 반영되면 함께 바뀝니다.**
 
@@ -293,6 +297,8 @@ io.open('/tmp/app.js','w',encoding='utf-8').write(re.findall(r'<script>(.*?)</sc
 ## 11. ⚠ 알고 있는 구멍
 
 ### 1. 직원에게 금액이 "화면에서만" 가려집니다
+
+*(Re:O-S 는 이 구멍을 보고 처음부터 금액을 딴 표로 나눴습니다 — REOS.md 4장)*
 
 지금은 화면이 안 그릴 뿐이고 **데이터베이스는 직원에게도 단가를 내보냅니다.**
 개발자 도구를 열면 보입니다.
@@ -307,7 +313,7 @@ Re:Bind 도 처음에 똑같았고, 나중에 금액을 딴 표(`project_money`)
 암호로 바꿔 두지 않았습니다. 본사가 "이 점포 핀이 뭐였지"를 볼 수 있어야 해서입니다.
 그 대신 틀린 횟수를 세서 늦춥니다. 점포가 수백 개로 늘면 다시 생각해야 합니다.
 
-### 3. 세 앱이 `ALLOWED_ORIGIN` 값 하나를 함께 씁니다 (6장)
+### 3. 네 앱이 `ALLOWED_ORIGIN` 값 하나를 함께 씁니다 (6장)
 
 ---
 
