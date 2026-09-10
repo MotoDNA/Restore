@@ -14,6 +14,13 @@
 <!-- 안드로이드 크롬은 apple-touch-icon 을 보지 않고 manifest 만 봅니다.
      이 줄이 없으면 홈 화면에 얹어도 마크가 안 붙습니다. (make-logo.py 가 만듭니다) -->
 <link rel="manifest" href="manifest.webmanifest" id="mf">
+<script>
+/* 한 지붕(dnalabs.kr/store) 아래서는 /manifest.webmanifest 가 없습니다 — 네 앱이
+   같은 이름을 다투기 때문입니다. body 끝에서 바꾸면 크롬이 이미 받아 간 뒤라
+   404 가 납니다. link 바로 뒤에서, 파싱 중에 바꿉니다. */
+if (location.pathname.replace(/\/+$/, '') === '/store')
+  document.getElementById('mf').setAttribute('href', '/store.webmanifest');
+</script>
 <link rel="stylesheet" href="https://cdn.jsdelivr.net/gh/orioncactus/pretendard@v1.3.9/dist/web/static/pretendard.min.css">
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2/dist/umd/supabase.js"></script>
 <style>
