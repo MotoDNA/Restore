@@ -167,6 +167,24 @@ select.inp{
    .btn:disabled 하나만 두면 line · ghost · danger 가 뒤에 와서 이깁니다. */
 .btn.line:disabled,.btn.ghost:disabled,.btn.danger:disabled,.btn.ok:disabled{
   background:var(--fill);color:var(--dim);border-color:transparent;transform:none}
+/* 함께 맡는 사람 고르기 — Re:Call 의 공유 목록과 같은 얼개입니다.
+   시트를 하나 더 띄우지 않고 점포 서식 안에 둡니다. 점포는 고칠 것이 몇 개 안 되고,
+   담당을 정하는 자리와 나란히 있어야 누가 보는지 한눈에 압니다. */
+.mempicks{display:flex;flex-direction:column;gap:2px;border:1px solid var(--line);
+  border-radius:var(--rs);padding:6px;background:var(--card);max-height:212px;overflow-y:auto}
+.mempick{display:flex;align-items:center;gap:10px;width:100%;padding:9px 10px;border:0;border-radius:9px;
+  background:none;font:inherit;text-align:left;cursor:pointer}
+.mempick:hover{background:var(--fill)}
+.mempick .nm{flex:1;font-size:.9rem;font-weight:700;color:var(--ink)}
+.mempick .me{font-size:.7rem;font-weight:700;color:var(--mut);background:var(--fill);padding:2px 7px;border-radius:6px}
+.mempick .cb{flex:none;width:21px;height:21px;border-radius:7px;border:1.6px solid var(--line);
+  display:grid;place-items:center;background:#fff}
+.mempick .cb svg{width:13px;height:13px;fill:none;stroke:#fff;stroke-width:3;
+  stroke-linecap:round;stroke-linejoin:round;opacity:0}
+.mempick .cb.on{background:var(--blue);border-color:var(--blue)}
+.mempick .cb.on svg{opacity:1}
+.mempicks .empty2{padding:12px 10px;font-size:.86rem;color:var(--mut);font-weight:600}
+
 .btnrow{display:flex;gap:10px;margin-top:16px}
 .btnrow .btn{flex:1}
 
@@ -1507,8 +1525,9 @@ function startLive(){
   stopLive();
   refreshTimer=setInterval(async()=>{
     if(document.hidden) return;
-    if(!$('sheet').hidden) return;
-    const r=await pull(); if(r.ok) renderAll();
+    if(!$('sheet').hidden) return;      // 시트를 열어 고치는 중
+    if(편집중()) return;                 // 어느 칸에 쓰고 있는 중
+    const r=await pull(); if(r.ok) renderLive();
   },25000);
   try{
     chan=sb.channel('restore')
@@ -1524,7 +1543,8 @@ function bump(){
   clearTimeout(bumpT);
   bumpT=setTimeout(async()=>{
     if(!$('sheet').hidden) return;
-    const r=await pull(); if(r.ok) renderAll();
+    if(편집중()) return;
+    const r=await pull(); if(r.ok) renderLive();
   },700);
 }
 function stopLive(){
@@ -1704,6 +1724,26 @@ function renderAll(){
   if(page==='items')  renderItems();
   if(page==='bill')   renderBill();
   if(page==='set')    renderSet();
+}
+
+/* ⚠ 저절로 다시 받아 올 때는 **목록만** 다시 그립니다.
+   renderSet() 은 사업자 정보 칸에 저장된 값을 다시 써 넣습니다. 25초 타이머가 그것을
+   부르는 바람에, 사업자 정보를 적는 도중에 글자가 통째로 지워졌습니다.
+   저장하기 전의 글자는 화면에만 있습니다 — 저절로 도는 것이 건드리면 안 됩니다. */
+function renderLive(){
+  if(!me) return;
+  if(page==='orders') renderOrders();
+  if(page==='stores') renderStores();
+  if(page==='items')  renderItems();
+  if(page==='bill')   renderBill();
+}
+
+/* 사람이 어느 칸엔가 쓰고 있으면 아예 손대지 않습니다.
+   목록을 다시 그리는 것도 커서를 잃게 만들 수 있습니다. */
+function 편집중(){
+  const el=document.activeElement; if(!el) return false;
+  const t=(el.tagName||'').toLowerCase();
+  return t==='input' || t==='textarea' || t==='select' || el.isContentEditable===true;
 }
 
 /* ───────── 발주 목록 ───────── */
@@ -2087,6 +2127,7 @@ function openStore(id){
   const s=id?storeOf(id):null;
   curStore=s;
   const isNew=!s;
+  sharePick = (s && Array.isArray(s.shared_ids)) ? [...s.shared_ids] : [];
   const v=(k,d)=>esc(s?(s[k]??d??''):(d??''));
   const mine=s?orders.filter(o=>o.store_id===s.id):[];
   const opts=members.map(m=>`<option value="${m.id}" ${s&&s.owner_id===m.id?'selected':(!s&&m.id===me.id?'selected':'')}>${esc(m.name||m.login_id)}</option>`).join('');
@@ -2115,7 +2156,13 @@ function openStore(id){
         </select></div>
         <div class="field"><label for="t-open">개점일</label><input class="inp" id="t-open" type="date" value="${v('opened_on')}"></div>
       </div>
-      <div class="field" style="margin-bottom:0"><label for="t-owner">담당 슈퍼바이저</label><select class="inp" id="t-owner">${opts}</select></div>
+      <div class="field"><label for="t-owner">담당 슈퍼바이저</label><select class="inp" id="t-owner">${opts}</select></div>
+      <div class="field" style="margin-bottom:0">
+        <label>함께 맡는 슈퍼바이저</label>
+        <div class="mempicks" id="t-share"></div>
+        <p class="readnote" style="margin-top:8px">고른 사람도 이 점포와 <b>발주를 보고 처리</b>합니다.
+          관리자는 고르지 않아도 늘 봅니다.</p>
+      </div>
     </div>
 
     <div class="card">
@@ -2175,8 +2222,30 @@ function openStore(id){
       }).join('') : '<p class="readnote">아직 발주가 없습니다.</p>'}
     </div>`}
 
-    <div class="btnrow"><button class="btn" data-act="store-save">${isNew?'점포 만들기':'저장'}</button></div>
+    <div class="btnrow fixrow"><button class="btn" data-act="store-save">${isNew?'점포 만들기':'저장'}</button></div>
   `);
+  drawSharePick();
+}
+
+/* 함께 맡는 사람. 담당 슈퍼바이저는 이 목록에서 뺍니다 —
+   이미 맡은 사람을 또 고르게 두면 "왜 두 번 고르나" 가 됩니다. */
+let sharePick=[];
+function drawSharePick(){
+  const box=$('t-share'); if(!box) return;
+  const owner=$('t-owner') ? $('t-owner').value : '';
+  const 남 = members.filter(m=>m.id!==owner);
+  if(!남.length){
+    box.innerHTML='<div class="empty2">다른 팀원이 없습니다. 관리자가 <b>설정</b>에서 계정을 만들면 여기 나타납니다.</div>';
+    return;
+  }
+  box.innerHTML = 남.map(m=>{
+    const on = sharePick.includes(m.id);
+    return '<button type="button" class="mempick" data-m="'+esc(m.id)+'">'+
+      '<span class="nm">'+esc(m.name||m.login_id)+'</span>'+
+      (me&&m.id===me.id?'<span class="me">나</span>':'')+
+      '<span class="cb'+(on?' on':'')+'"><svg viewBox="0 0 24 24"><path d="M5 12.5l4.5 4.5L19 7.5"/></svg></span>'+
+    '</button>';
+  }).join('');
 }
 
 async function saveStore(){
@@ -2187,6 +2256,8 @@ async function saveStore(){
     phone:$('t-phone').value.trim(), addr:$('t-addr').value.trim(),
     status:$('t-status').value, pay_term:$('t-term').value,
     opened_on:$('t-open').value||null, owner_id:$('t-owner').value,
+    /* 담당자가 공유 목록에도 들어 있으면 한 사람이 두 자리를 차지합니다 */
+    shared_ids: sharePick.filter(m=>m!==$('t-owner').value),
     biz_name:$('t-bizname').value.trim(), biz_no:$('t-bizno').value.trim(),
     biz_ceo:$('t-bizceo').value.trim(), biz_type:$('t-biztype').value.trim(),
     biz_item:$('t-bizitem').value.trim(), memo:$('t-memo').value.trim(),
@@ -2850,6 +2921,12 @@ document.addEventListener('click', async (e)=>{
   /* ── 서비스 고르기 (로그인 화면) ── */
   const opt=t.closest('#appPick .opt');
   if(opt){ setPick(opt.dataset.app); return; }
+  const 사람=t.closest('#t-share [data-m]');
+  if(사람){
+    const m=사람.dataset.m;
+    sharePick = sharePick.includes(m) ? sharePick.filter(x=>x!==m) : [...sharePick, m];
+    drawSharePick(); return;
+  }
   if(t.closest('#g-other')){ location.href=urlFor(pickApp); return; }
 
   /* ── 아래 탭 ── */
@@ -2981,6 +3058,8 @@ document.addEventListener('input',(e)=>{
   }
 });
 document.addEventListener('change',(e)=>{
+  /* 담당 슈퍼바이저가 바뀌면 아래 목록에서 그 사람을 빼야 합니다 */
+  if(e.target.id==='t-owner'){ drawSharePick(); return; }
   if(e.target.id==='billYm'){ billYm=e.target.value; renderBill(); }
   if(e.target.id==='billBase'){ billBase=e.target.value; renderBill(); }
 });
