@@ -118,6 +118,14 @@ Deno.serve(async (req) => {
   if (!co || co.disabled || !(co.apps ?? []).includes('restore')) return json(NOPE, 404);
 
   // ───────── 핀 확인 ─────────
+  // ⚠ 핀이 없는 점포는 링크만으로 들어오게 두지 않습니다.
+  //    화면은 "링크가 새어 나가도 핀을 모르면 못 들어옵니다" 라고 말합니다 — 그 말이 참이어야 합니다.
+  //    SQL 로 점포를 넣으면서 핀 칸을 빠뜨렸더니 다섯 곳이 그대로 열려 있었습니다.
+  //    화면 쪽에서도 막지만(링크를 켤 때 핀을 만듭니다), 진짜 자물쇠는 여기입니다.
+  if (!s.pin) {
+    return json({ ok: false, error: '이 점포는 아직 발주 링크를 쓸 수 없습니다. 본사에 문의해 주세요.' }, 403);
+  }
+
   if (s.pin) {
     if (await pinBlocked(token)) return json({ ok: false, error: '잠시 뒤에 다시 해 주세요.', needPin: true }, 429);
     if (!pin) return json({ ok: false, error: '핀을 넣어 주세요.', needPin: true }, 401);

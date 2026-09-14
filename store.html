@@ -891,6 +891,7 @@ nav.tabs button:active{opacity:.6}
 .linkbox .pinrow{display:flex;align-items:center;gap:10px;margin-top:11px}
 .linkbox .pinrow .lb{font-size:.8rem;color:var(--mut);font-weight:700}
 .linkbox .pinrow .pv{font-size:1.25rem;font-weight:800;letter-spacing:.22em;font-variant-numeric:tabular-nums}
+.linkbox .pinrow .pv.none{color:var(--red);font-size:1rem;letter-spacing:-.01em}
 .linkbox .pinrow .sp{flex:1}
 
 /* ───── 점주 화면 ───── */
@@ -2136,12 +2137,15 @@ function openStore(id){
       <div class="linkbox">
         <div class="u">${esc(s.share_token?storeLink(s):'(아직 링크가 없습니다)')}</div>
         <div class="pinrow">
-          <span class="lb">핀</span><span class="pv">${esc(s.pin||'없음')}</span>
+          <span class="lb">핀</span><span class="pv${s.pin?'':' none'}">${esc(s.pin||'없음')}</span>
           <span class="sp"></span>
           <button class="btn sm line" data-act="pin-new">핀 새로</button>
           <button class="btn sm" data-act="link-copy">복사</button>
         </div>
       </div>
+      ${s.share_on && !s.pin ? `<p class="readnote warn">
+        <b>핀이 없습니다.</b> 지금은 링크만 알면 누구나 들어옵니다.
+        <b>핀 새로</b> 를 눌러 만들고 점주에게 알려 주세요.</p>` : ''}
       ${s.pin && s.pin.length < 6 ? `<p class="readnote warn">
         <b>핀이 ${s.pin.length}자리입니다.</b> 지금은 여섯 자리로 만듭니다 —
         네 자리는 만 개뿐이라 링크가 새어 나가면 시간을 들여 뚫을 수 있습니다.
@@ -2296,7 +2300,7 @@ function openNewOrder(){
       </div>
       <div id="n-items"></div>
     </div>
-    <div class="btnrow"><button class="btn" data-act="new-save">발주 넣기</button></div>
+    <div class="btnrow fixrow"><button class="btn" data-act="new-save">발주 넣기</button></div>
   `);
   drawPickList('n-items','n-q',true);
 }
@@ -2921,8 +2925,14 @@ document.addEventListener('click', async (e)=>{
     const on=!curStore.share_on;
     const patch={share_on:on};
     if(on&&!curStore.share_token) patch.share_token=mkToken();
+    /* ⚠ 핀 없이 링크만 켜면 주소를 아는 사람은 누구나 발주를 넣습니다.
+       바로 위 안내가 "핀을 모르면 못 들어옵니다" 라고 말하는데 그것이 거짓말이 됩니다.
+       켤 때 핀이 없으면 그 자리에서 만듭니다. */
+    const 핀만듦 = on && !curStore.pin;
+    if(핀만듦) patch.pin=mkPin();
     await sb.from('stores').update(patch).eq('id',curStore.id);
-    await pull(); openStore(curStore.id); toast(on?'링크를 켰습니다':'링크를 껐습니다'); return;
+    await pull(); openStore(curStore.id);
+    toast(on ? (핀만듦?'링크를 켜고 핀을 만들었습니다':'링크를 켰습니다') : '링크를 껐습니다'); return;
   }
   if(a==='pin-new'){
     if(!curStore||!confirm('핀을 여섯 자리로 새로 만듭니다.\n\n지금 핀은 그 자리에서 못 쓰게 됩니다.\n점주에게 새 핀을 알려 주셔야 합니다.\n\n계속할까요?')) return;
