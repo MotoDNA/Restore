@@ -1521,6 +1521,42 @@ function calcOrder(o){
   const vat = Math.round(tax*(Number(o.vat_rate??10)/100));
   return {taxable:tax, taxfree:free, supply:tax+free, vat, total:tax+free+vat, lineCount:n};
 }
+/* 출고 칸을 고치는 **즉시** 금액과 합계를 다시 셉니다.
+   저장해야 숫자가 움직이면, 몇 개 보내면 얼마인지를 손으로 셈하게 됩니다.
+
+   ⚠ 세는 규칙은 calcOrder() 하나뿐입니다. 여기서 또 세면 언젠가 두 숫자가 갈립니다 —
+      그래서 화면에 적힌 값으로 발주를 흉내 내어 calcOrder 에 그대로 넘깁니다.
+   ⚠ 화면만 바꿉니다. 저장은 "출고 수량 저장" 을 눌러야 합니다 —
+      글자를 한 자 칠 때마다 서버에 쓰면 22 를 치는 동안 2 가 먼저 저장됩니다. */
+function repriceShip(){
+  const 표=$('ordTab'); if(!표) return;
+  const 칸들=[...표.querySelectorAll('tbody tr[data-line]')];
+  const 줄=칸들.map(tr=>{
+    const inp=tr.querySelector('.shipq');
+    const 주문=Number(tr.dataset.qty)||0;
+    return { price:Number(tr.dataset.price)||0, taxfree:tr.dataset.free==='1', qty:주문,
+             ship_qty: inp ? Math.max(0,Math.floor(Number(inp.value)||0)) : 주문 };
+  });
+  const c=calcOrder({lines:줄, vat_rate:Number(표.dataset.vat)});
+
+  칸들.forEach((tr,i)=>{
+    const 값=tr.querySelector('.lamt'); if(!값) return;
+    값.textContent=won(줄[i].price*줄[i].ship_qty);
+    값.classList.toggle('short', 줄[i].ship_qty!==줄[i].qty);
+  });
+  const 넣기=(id,v)=>{ const el=$(id); if(el) el.textContent=won(v) };
+  넣기('fFree',c.taxfree); 넣기('fTax',c.taxable); 넣기('fVat',c.vat); 넣기('fTot',c.total);
+
+  /* 아직 저장하지 않았다는 것이 보여야 합니다. 숫자만 바뀌면 저장한 줄 압니다. */
+  const 바뀜=칸들.some(tr=>{ const i=tr.querySelector('.shipq');
+    return i && Math.max(0,Math.floor(Number(i.value)||0))!==Number(i.dataset.saved) });
+  const 단추=document.querySelector('[data-act="save-ship"]');
+  if(단추){
+    단추.classList.toggle('ghost', !바뀜);
+    단추.textContent = 바뀜 ? '출고 수량 저장 — 아직 저장 안 됨' : '출고 수량 저장';
+  }
+}
+
 const ST_LABEL={placed:'접수',confirmed:'확정',shipped:'출고',done:'완료',canceled:'취소'};
 const STORE_LABEL={open:'영업',pause:'휴업',closed:'폐점'};
 
@@ -1823,26 +1859,26 @@ function openOrder(id){
   const rows=(o.lines||[]).map(l=>{
     const q=(l.ship_qty===null||l.ship_qty===undefined)?l.qty:l.ship_qty;
     const short=(l.ship_qty!==null&&l.ship_qty!==undefined&&l.ship_qty!==l.qty);
-    return `<tr data-line="${l.id}">
+    return `<tr data-line="${l.id}" data-price="${Number(l.price)||0}" data-free="${l.taxfree?1:0}" data-qty="${Number(l.qty)||0}">
       <td>${esc(l.name)}${l.taxfree?' <span class="badge tf" style="height:19px;padding:0 6px;font-size:.66rem">면세</span>':''}
         ${l.spec?`<div class="sub">${esc(l.spec)}</div>`:''}
         ${l.note?`<div class="sub">요청: ${esc(l.note)}</div>`:''}</td>
       <td class="n">${num(l.qty)}<div class="sub">${esc(l.unit)}</div></td>
       <td class="n">${(o.status==='confirmed'||o.status==='shipped')&&!locked
-          ? `<input class="mini shipq" type="number" min="0" value="${q}" data-line="${l.id}">`
+          ? `<input class="mini shipq" type="number" min="0" value="${q}" data-line="${l.id}" data-saved="${q}">`
           : (o.status==='placed'||o.status==='canceled')
             ? '<span style="color:var(--dim)">—</span>'
             : `<span class="${short?'short':''}">${num(q)}</span>`}</td>
-      ${isAdmin()?`<td class="n">${won((Number(l.price)||0)*q)}<div class="sub">@${won(l.price)}</div></td>`:''}
+      ${isAdmin()?`<td class="n"><span class="lamt${short?' short':''}">${won((Number(l.price)||0)*q)}</span><div class="sub">@${won(l.price)}</div></td>`:''}
     </tr>`;
   }).join('');
 
   const money = isAdmin() ? `
     <tfoot>
-      ${c.taxfree?`<tr><td colspan="${isAdmin()?3:2}">면세 공급가액</td><td class="n">${won(c.taxfree)}</td></tr>`:''}
-      <tr><td colspan="3">과세 공급가액</td><td class="n">${won(c.taxable)}</td></tr>
-      <tr><td colspan="3">부가세</td><td class="n">${won(c.vat)}</td></tr>
-      <tr><td colspan="3">합계</td><td class="n">${won(c.total)}</td></tr>
+      ${(o.lines||[]).some(l=>l.taxfree)?`<tr><td colspan="3">면세 공급가액</td><td class="n" id="fFree">${won(c.taxfree)}</td></tr>`:''}
+      <tr><td colspan="3">과세 공급가액</td><td class="n" id="fTax">${won(c.taxable)}</td></tr>
+      <tr><td colspan="3">부가세</td><td class="n" id="fVat">${won(c.vat)}</td></tr>
+      <tr><td colspan="3">합계</td><td class="n" id="fTot">${won(c.total)}</td></tr>
     </tfoot>` : '';
 
   const acts=[];
@@ -1864,7 +1900,7 @@ function openOrder(id){
 
     <div class="card">
       <h3>발주 내용</h3>
-      <table class="ltab">
+      <table class="ltab" id="ordTab" data-vat="${Number(o.vat_rate??10)}">
         <thead><tr><th>품목</th><th class="n">주문</th><th class="n">출고</th>${isAdmin()?'<th class="n">금액</th>':''}</tr></thead>
         <tbody>${rows||`<tr><td colspan="4">품목이 없습니다.</td></tr>`}</tbody>
         ${money}
@@ -2843,6 +2879,7 @@ document.addEventListener('input',(e)=>{
   if(t.id==='itQ'){  itQ=t.value;  $('itQClr').hidden=!t.value;  renderItems();  return; }
   if(t.id==='n-q'){  drawPickList('n-items','n-q',true); return; }
   if(t.id==='pq'){   drawPubList(t.value); return; }
+  if(t.classList&&t.classList.contains('shipq')){ repriceShip(); return; }
   if(t.dataset&&t.dataset.qi){
     setQty(t.dataset.qi,t.value);
     t.closest('.pick-item').classList.toggle('has',!!draft[t.dataset.qi]);
