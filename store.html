@@ -860,7 +860,8 @@ nav.tabs button:active{opacity:.6}
 .ltab td{font-size:.88rem;font-weight:600;padding:11px 0;border-bottom:1px solid var(--line);vertical-align:top}
 .ltab tr:last-child td{border-bottom:0}
 .ltab td .sub{font-size:.76rem;color:var(--mut);font-weight:600;margin-top:2px}
-.ltab td .short{color:var(--red);font-weight:700}
+.ltab td .short{color:var(--red);font-weight:700}   /* 주문보다 모자라게 나감 */
+.ltab td .over {color:var(--blue);font-weight:700}   /* 주문보다 더 나감 */
 .ltab input.mini{width:64px;height:34px;border:1px solid var(--line);border-radius:9px;
   text-align:right;padding:0 8px;font-weight:700;font-variant-numeric:tabular-nums;background:#fff}
 .ltab input.mini:focus{outline:2px solid var(--blue);outline-offset:-2px}
@@ -1542,7 +1543,8 @@ function repriceShip(){
   칸들.forEach((tr,i)=>{
     const 값=tr.querySelector('.lamt'); if(!값) return;
     값.textContent=won(줄[i].price*줄[i].ship_qty);
-    값.classList.toggle('short', 줄[i].ship_qty!==줄[i].qty);
+    값.classList.remove('short','over');
+    const 표시=수량차이(줄[i].ship_qty, 줄[i].qty); if(표시) 값.classList.add(표시);
   });
   const 넣기=(id,v)=>{ const el=$(id); if(el) el.textContent=won(v) };
   넣기('fFree',c.taxfree); 넣기('fTax',c.taxable); 넣기('fVat',c.vat); 넣기('fTot',c.total);
@@ -1555,6 +1557,14 @@ function repriceShip(){
     단추.classList.toggle('ghost', !바뀜);
     단추.textContent = 바뀜 ? '출고 수량 저장 — 아직 저장 안 됨' : '출고 수량 저장';
   }
+}
+
+/* 나간 수량이 주문과 어떻게 다른가. 세 화면(본사 목록·본사 상세·가맹점)이
+   같은 규칙을 써야 같은 줄이 어디서는 빨갛고 어디서는 안 빨간 일이 없습니다. */
+function 수량차이(나감, 주문){
+  const a=Number(나감), b=Number(주문);
+  if(!Number.isFinite(a)||!Number.isFinite(b)||a===b) return '';
+  return a<b ? 'short' : 'over';
 }
 
 const ST_LABEL={placed:'접수',confirmed:'확정',shipped:'출고',done:'완료',canceled:'취소'};
@@ -1868,8 +1878,8 @@ function openOrder(id){
           ? `<input class="mini shipq" type="number" min="0" value="${q}" data-line="${l.id}" data-saved="${q}">`
           : (o.status==='placed'||o.status==='canceled')
             ? '<span style="color:var(--dim)">—</span>'
-            : `<span class="${short?'short':''}">${num(q)}</span>`}</td>
-      ${isAdmin()?`<td class="n"><span class="lamt${short?' short':''}">${won((Number(l.price)||0)*q)}</span><div class="sub">@${won(l.price)}</div></td>`:''}
+            : `<span class="${수량차이(q,l.qty)}">${num(q)}</span>`}</td>
+      ${isAdmin()?`<td class="n"><span class="lamt ${수량차이(q,l.qty)}">${won((Number(l.price)||0)*q)}</span><div class="sub">@${won(l.price)}</div></td>`:''}
     </tr>`;
   }).join('');
 
@@ -1882,11 +1892,18 @@ function openOrder(id){
     </tfoot>` : '';
 
   const acts=[];
-  if(!cx && !locked){
-    if(o.status==='placed')    acts.push(`<button class="btn" data-act="to-confirmed">확정하기</button>`);
-    if(o.status==='confirmed') acts.push(`<button class="btn" data-act="to-shipped">출고 처리</button>`);
-    if(o.status==='shipped')   acts.push(`<button class="btn ok" data-act="to-done">완료</button>`);
-    if(o.status!=='done')      acts.push(`<button class="btn ghost" data-act="to-canceled">취소</button>`);
+  if(!locked){
+    if(!cx){
+      if(o.status==='placed')    acts.push(`<button class="btn" data-act="to-confirmed">확정하기</button>`);
+      if(o.status==='confirmed') acts.push(`<button class="btn" data-act="to-shipped">출고 처리</button>`);
+      if(o.status==='shipped')   acts.push(`<button class="btn ok" data-act="to-done">완료</button>`);
+    }
+    /* 되돌리기 — 잘못 눌렀을 때 빠져나올 길이 있어야 합니다.
+       단추 하나로 앞으로만 가게 두면 확정을 잘못 누른 발주가 그대로 굳습니다.
+       취소한 발주도 접수로 되살립니다. */
+    if(앞단계[o.status]) acts.push(
+      `<button class="btn ghost" data-act="to-back">${esc(조사로(ST_LABEL[앞단계[o.status]]))} ${cx?'되살리기':'되돌리기'}</button>`);
+    if(!cx && o.status!=='done') acts.push(`<button class="btn ghost" data-act="to-canceled">취소</button>`);
   }
 
   openSheet('order', dbar(esc(s?s.name:'(지운 점포)'),
@@ -1959,6 +1976,44 @@ async function setStatus(st){
   await pull(); renderAll();
   const again=orders.find(x=>x.id===o.id); if(again) openOrder(again.id); else closeSheet();
 }
+/* 한 발 앞은 어디인가. 취소는 줄 밖이라 접수로 되살립니다. */
+const 앞단계={confirmed:'placed', shipped:'confirmed', done:'shipped', canceled:'placed'};
+const 단계차례=['placed','confirmed','shipped','done'];
+
+/* '확정으로' 인지 '접수로' 인지. 받침이 있으면 '으로' 입니다.
+   "접수(으)로" 처럼 적어 두면 화면이 서류처럼 보입니다. */
+function 조사로(말){
+  const 끝=말.charCodeAt(말.length-1)-0xAC00;
+  const 받침=(끝>=0&&끝<11172) ? 끝%28 : 0;
+  return 말 + ((받침===0||받침===8) ? '로' : '으로');
+}
+
+async function stepBack(){
+  const o=curOrder; if(!o) return;
+  const 앞=앞단계[o.status]; if(!앞) return;
+
+  let 물음 = o.status==='canceled'
+    ? '취소한 발주를 접수로 되살릴까요?'
+    : ST_LABEL[o.status]+' 을 되돌려 '+조사로(ST_LABEL[앞])+' 보낼까요?';
+  /* 이미 청구서가 나간 뒤라면 금액이 달라집니다. 그냥 넘기면 안 됩니다. */
+  if(o.billed_ym) 물음 = o.billed_ym+' 정산으로 마감한 발주입니다. 청구서가 나간 뒤라면 금액이 달라집니다.\n\n'+물음;
+  if(!confirm(물음)) return;
+
+  /* 지나온 날짜는 지웁니다. 출고로 되돌렸는데 완료일이 남아 있으면
+     기록이 "완료됐는데 출고 중" 이라고 말합니다. */
+  const i=단계차례.indexOf(앞);
+  const patch={status:앞};
+  if(i<3) patch.done_on=null;
+  if(i<2) patch.shipped_on=null;
+  if(i<1) patch.confirmed_on=null;
+
+  const {error}=await sb.from('orders').update(patch).eq('id',o.id);
+  if(error){ toast('되돌리지 못했습니다: '+String(error.message).slice(0,50)); return; }
+  toast(ST_LABEL[앞]+'(으)로 되돌렸습니다');
+  await pull(); renderAll();
+  const again=orders.find(x=>x.id===o.id); if(again) openOrder(again.id); else closeSheet();
+}
+
 async function saveShipQty(){
   const o=curOrder; if(!o) return;
   for(const inp of $$('.shipq',$('sheetIn'))){
@@ -2694,7 +2749,7 @@ function renderPubHist(){
       const short=(l.shipQty!==null&&l.shipQty!==undefined&&l.shipQty!==l.qty);
       return `<tr><td>${esc(l.name)}${l.spec?`<div class="sub">${esc(l.spec)}</div>`:''}</td>
         <td class="n">${num(l.qty)}<div class="sub">${esc(l.unit)}</div></td>
-        <td class="n"><span class="${short?'short':''}">${num(q)}</span></td>
+        <td class="n"><span class="${수량차이(q,l.qty)}">${num(q)}</span></td>
         <td class="n">${won((Number(l.price)||0)*q)}</td></tr>`;
     }).join('');
     return `<div class="card">
@@ -2815,6 +2870,7 @@ document.addEventListener('click', async (e)=>{
   if(a==='bill'){ await setBilled(true); return; }
   if(a==='unbill'){ if(confirm('마감을 풀면 다시 고칠 수 있게 됩니다. 풀까요?')) await setBilled(false); return; }
   if(a==='to-confirmed'||a==='to-shipped'||a==='to-done'){ await setStatus(a.slice(3)); return; }
+  if(a==='to-back'){ await stepBack(); return; }
   if(a==='to-canceled'){ if(confirm('이 발주를 취소할까요?')) await setStatus('canceled'); return; }
   if(a==='save-ship'){ await saveShipQty(); return; }
   if(a==='save-ship-info'){ await saveShipInfo(); return; }
