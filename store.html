@@ -684,6 +684,16 @@ nav.tabs button:active{opacity:.6}
 .paper .bt{border:1.2px solid #222;margin-bottom:10px}
 .paper .bt th,.paper .bt td{border:1px solid #555;padding:6px 7px;font-size:11px;vertical-align:middle}
 .paper .bt th{background:#F4F5F7;font-weight:700;color:#333;text-align:center;white-space:nowrap}
+/* 왼쪽 세로 이름표. 26px 칸에 '공급받는자' 다섯 자를 가로로 넣으면 칸을 넘어갑니다 —
+   거래명세서가 원래 세로로 쓰는 자리이니 세로쓰기로 둡니다. */
+.paper .bt th.vt{
+  width:28px;padding:8px 3px;white-space:normal;line-height:1.15;letter-spacing:.16em;
+  writing-mode:vertical-rl;text-orientation:upright;
+}
+/* 이름표 칸은 '사업자번호'·'업태 / 종목' 이 한 줄에 들어가는 너비로 못 박습니다.
+   종이 안쪽이 710px 이라 (28+80)×2 를 빼면 값 칸이 247px 씩 남습니다. */
+.paper .bt th.lb{width:80px}
+.paper .bt td.c{text-align:center}
 .paper .bt td.l{text-align:left}
 .paper .bt td.c{text-align:center}
 .paper .bt .who{text-align:center;line-height:2.1;font-size:11.5px}
@@ -2549,21 +2559,21 @@ function paperHTML(pf){
 
     <table class="bt"><tbody>
       <tr>
-        <th rowspan="4" style="width:26px">공급받는자</th>
-        <th style="width:74px">상호</th><td class="l" style="width:196px">${esc(buyer)}</td>
-        <th rowspan="4" style="width:26px">공 급 자</th>
-        <th style="width:74px">상호</th><td class="l">${esc(me?me.companyName:'')}</td>
+        <th class="vt" rowspan="6">공급받는자</th>
+        <th class="lb">상호</th><td class="c">${esc(buyer)}</td>
+        <th class="vt" rowspan="6">공급자</th>
+        <th class="lb">상호</th><td class="c">${esc(me?me.companyName:'')}</td>
       </tr>
-      <tr><th>사업자번호</th><td class="l">${esc(s.biz_no||'')}</td>
-          <th>사업자번호</th><td class="l">${esc(iss.biz_no||'')}</td></tr>
-      <tr><th>대표자</th><td class="l">${esc(s.biz_ceo||s.boss||'')}</td>
-          <th>대표자</th><td class="l">${esc(iss.ceo||'')}</td></tr>
-      <tr><th>업태 / 종목</th><td class="l">${esc([s.biz_type,s.biz_item].filter(Boolean).join(' / '))}</td>
-          <th>업태 / 종목</th><td class="l">${esc([iss.biz_type,iss.biz_item].filter(Boolean).join(' / '))}</td></tr>
-      <tr><th style="width:74px">주소</th><td class="l" colspan="2">${esc(s.addr||'')}</td>
-          <th style="width:74px">주소</th><td class="l" colspan="2">${esc(iss.addr||'')}</td></tr>
-      <tr><th style="width:74px">연락처</th><td class="l" colspan="2">${esc(s.phone||'')}</td>
-          <th style="width:74px">연락처</th><td class="l" colspan="2">${esc(iss.tel||'')}</td></tr>
+      <tr><th class="lb">사업자번호</th><td class="c">${esc(s.biz_no||'')}</td>
+          <th class="lb">사업자번호</th><td class="c">${esc(iss.biz_no||'')}</td></tr>
+      <tr><th class="lb">대표자</th><td class="c">${esc(s.biz_ceo||s.boss||'')}</td>
+          <th class="lb">대표자</th><td class="c">${esc(iss.ceo||'')}</td></tr>
+      <tr><th class="lb">업태 / 종목</th><td class="c">${esc([s.biz_type,s.biz_item].filter(Boolean).join(' / '))}</td>
+          <th class="lb">업태 / 종목</th><td class="c">${esc([iss.biz_type,iss.biz_item].filter(Boolean).join(' / '))}</td></tr>
+      <tr><th class="lb">주소</th><td class="c">${esc(s.addr||'')}</td>
+          <th class="lb">주소</th><td class="c">${esc(iss.addr||'')}</td></tr>
+      <tr><th class="lb">연락처</th><td class="c">${esc(s.phone||'')}</td>
+          <th class="lb">연락처</th><td class="c">${esc(iss.tel||'')}</td></tr>
     </tbody></table>
 
     <table class="bt"><tbody><tr>
