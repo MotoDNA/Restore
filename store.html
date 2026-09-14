@@ -1940,7 +1940,7 @@ function openOrder(id){
         ${money}
       </table>
       ${(o.status==='confirmed'||o.status==='shipped')&&!locked
-        ? `<p class="readnote" style="margin-top:12px">출고 칸을 고치면 <b>실제로 나간 수량</b>으로 셉니다. 모자라게 보낸 것은 그만큼만 청구됩니다.</p>
+        ? `<p class="readnote" style="margin-top:12px">실제 출고 수량을 입력해주세요.</p>
            <button class="btn sm ghost" data-act="save-ship" style="margin-top:10px">출고 수량 저장</button>`
         : ''}
     </div>
