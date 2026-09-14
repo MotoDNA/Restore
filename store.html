@@ -948,17 +948,79 @@ nav.tabs button:active{opacity:.6}
   stroke-linecap:round;stroke-linejoin:round;flex:none}
 .svcsw-f{font-size:.72rem;color:#8B95A1;line-height:1.5;padding:8px 11px 4px;border-top:1px solid #E5E8EB;margin-top:5px}
 @media(max-width:420px){ .svcsw-b span{max-width:66px;overflow:hidden;text-overflow:ellipsis} }
+
+/* ═══════════════════════════════════════════════════════════════
+   로그인 화면 — 왼쪽에서 고르고 들어가고, 오른쪽에서 그것이 무엇인지 봅니다
+
+   ⚠ 네 앱이 **같은 모양**을 씁니다. 하나를 고치면 넷을 다 고칩니다.
+   ⚠ 아래 규칙은 위에 있는 옛 규칙(#gate .box …)을 덮어써야 해서
+      `.box.wide` 를 앞에 답니다. 미디어쿼리 차례에 기대지 않으려는 것입니다 —
+      기대면 화면 폭에 따라 옛 배치가 튀어나옵니다.
+   ═══════════════════════════════════════════════════════════════ */
+#gate .box.wide{max-width:1040px;display:grid;gap:56px;align-items:center;
+  grid-template-columns:minmax(0,392px) minmax(0,1fr)}
+#gate .box.wide .gleft{text-align:left;min-width:0}
+#gate .box.wide .mark{flex-direction:row;align-items:center;gap:11px;margin-bottom:22px}
+#gate .box.wide .mark .logo{width:38px;height:38px}
+#gate .box.wide .mark span{font-size:.95rem;font-weight:800;letter-spacing:-.03em;color:#B0B8C1}
+#gate .box.wide .mark span b{color:#fff}
+#gate .box.wide .pick{margin-bottom:26px;border-radius:15px;padding:5px}
+#gate .box.wide .pick .thumb{top:5px;left:5px;width:calc((100% - 10px)/4);height:calc(100% - 10px);border-radius:11px}
+#gate .box.wide .pick.four .opt{padding:11px 3px 12px;border-radius:11px}
+#gate .box.wide .pick.four .opt b{font-size:.76rem;margin:6px 0 0}
+#gate .box.wide .pick.four .opt i{display:none}      /* 설명은 이제 오른쪽 판이 합니다 */
+#gate .box.wide .pick .opt svg{width:20px;height:20px}
+#gate .box.wide h1{font-size:1.62rem;margin:0 0 22px}
+#gate .box.wide p.sub{margin:-12px 0 22px}
+#gate .box.wide .msg,#gate .box.wide .foot,#gate .box.wide .othernote{text-align:left}
+#gate .box.wide .gohome{margin-top:14px}
+
+/* ── 오른쪽 — 고른 서비스가 무엇인지 ── */
+#gate .gside{position:relative;min-width:0;border-radius:22px;overflow:hidden;
+  background:linear-gradient(160deg,#1B222C,#151B24);border:1px solid #242D38;
+  padding:38px 38px 0;min-height:520px}
+#gate .gside::before{content:'';position:absolute;inset:0;opacity:.14;pointer-events:none;
+  background:radial-gradient(110% 62% at 78% 4%, var(--ac,#3182F6), transparent 62%)}
+#gate .gside .sv{position:relative;display:none}
+#gate .gside .sv.on{display:block;animation:gsfade .34s cubic-bezier(.4,0,.2,1)}
+@keyframes gsfade{from{opacity:0;transform:translateY(9px)}to{opacity:1;transform:none}}
+#gate .gside .stag{display:inline-block;font-size:.72rem;font-weight:800;letter-spacing:.02em;
+  color:var(--ac,#3182F6);background:color-mix(in srgb, var(--ac,#3182F6) 15%, transparent);
+  padding:5px 11px;border-radius:999px;margin-bottom:15px}
+#gate .gside h2{font-size:1.5rem;font-weight:800;letter-spacing:-.04em;margin:0 0 11px;line-height:1.32;color:#fff}
+#gate .gside p{font-size:.91rem;color:#8B95A1;line-height:1.68;margin:0 0 20px}
+#gate .gside ul{list-style:none;margin:0 0 26px;padding:0}
+#gate .gside li{position:relative;padding-left:19px;margin-bottom:9px;font-size:.86rem;
+  color:#B0B8C1;line-height:1.6}
+#gate .gside li::before{content:'';position:absolute;left:3px;top:.62em;width:6px;height:6px;
+  border-radius:50%;background:var(--ac,#3182F6)}
+#gate .gside li b{color:#fff;font-weight:700}
+#gate .gside .shot{position:relative;margin:0 auto;width:232px;border-radius:20px 20px 0 0;
+  border:1px solid #2E3844;border-bottom:0;background:#0B0F14;padding:7px 7px 0;
+  box-shadow:0 -2px 40px rgba(0,0,0,.4)}
+#gate .gside .shot img{display:block;width:100%;height:auto;border-radius:14px 14px 0 0}
+#gate .gside .fade{position:absolute;left:0;right:0;bottom:0;height:74px;pointer-events:none;
+  background:linear-gradient(180deg,transparent,#151B24)}
+
+/* ── 폰 — 로그인이 먼저, 소개는 그 아래 ──
+   폰으로 오시는 분은 대개 이미 쓰시는 분이라 로그인이 한 화면에 다 보여야 합니다. */
+@media(max-width:880px){
+  #gate{align-items:flex-start}
+  #gate .box.wide{max-width:420px;grid-template-columns:1fr;gap:22px}
+  #gate .box.wide .gside{order:2;min-height:0;padding:24px 22px}
+  #gate .box.wide .gside .shot,#gate .box.wide .gside .fade{display:none}
+  #gate .box.wide .gside ul{margin-bottom:0}
+  #gate .box.wide .gside h2{font-size:1.2rem}
+}
 </style>
 </head>
 <body>
 
 <!-- ═════════ 로그인 (본사 직원) ═════════ -->
 <div id="gate" hidden>
-  <div class="box">
+  <div class="box wide">
    <div class="gleft">
-    <div class="mark">
-      <i class="logo" role="img" aria-label="DNA Labs"></i>
-    </div>
+    <div class="mark"><i class="logo" role="img" aria-label="DNA Labs"></i><span>DNA <b>Labs</b></span></div>
     <!-- 누르면 고르기만 하고 넘어가지는 않습니다 —
          비밀번호를 엉뚱한 앱에 치는 일이 없어야 합니다. -->
     <div class="pick four i2" id="appPick" role="tablist" aria-label="어느 서비스로 들어갈지">
@@ -982,10 +1044,6 @@ nav.tabs button:active{opacity:.6}
     </div>
     <!-- 회사 홈페이지로. 로그인 화면에서 "여기가 어느 회사인가" 를 확인하거나
          소개를 보러 갈 길이 없었습니다. 눈에 띄지 않게 글자로만 둡니다. -->
-    <a class="gohome" href="https://dnalabs.kr/">DNA Labs 홈페이지 &rsaquo;</a>
-
-   </div>
-   <div class="gright">
     <h1 id="gateTitle">가맹점 발주와 정산</h1>
     <p class="sub" id="gateSub" hidden></p>
     <form id="gateForm" autocomplete="on">
@@ -1015,6 +1073,39 @@ nav.tabs button:active{opacity:.6}
       계정은 <b>본사 관리자</b>가 만들어 줍니다.<br>
       가맹점 점주는 계정 없이 <b>발주 링크</b>로 들어옵니다.
     </div>
+    <a class="gohome" href="https://dnalabs.kr/">DNA Labs 홈페이지 &rsaquo;</a>
+   </div>
+   <!-- 고른 서비스가 무엇인지. 네 앱이 같은 판을 씁니다 — setPick 이 바꿔 끼웁니다. -->
+   <div class="gside" id="gside" style="--ac:#FF7A1A">
+    <div class="sv" data-app="rebind">
+      <span class="stag">Re:Bind</span>
+      <h2>제조 공정과 거래명세서</h2>
+      <p>인쇄소 · 제본소처럼 공정이 여러 단계로 나뉜 곳에서 씁니다.</p>
+      <ul><li>어느 <b>공정까지 진행됐는지</b> 목록에서 한눈에 봅니다</li><li>고객사에는 <b>계정 없이 링크만</b> 보냅니다</li><li>같은 자료가 그대로 <b>견적서 · 거래명세서</b>로 나옵니다</li></ul>
+      <div class="shot"><img data-src="https://dnalabs.kr/shot-bind-list.png" alt="Re:Bind 프로젝트 목록 화면" decoding="async" width="520" height="1125"></div>
+    </div>
+    <div class="sv" data-app="recall">
+      <span class="stag">Re:Call</span>
+      <h2>명함으로 시작하는 고객관리</h2>
+      <p>밖에서 사람을 만나는 영업 담당자와 그 팀이 씁니다.</p>
+      <ul><li>명함을 찍으면 <b>고객카드</b>가 만들어집니다</li><li>만난 기록이 쌓여 다음에 만날 때 <b>지난 이야기</b>가 먼저 나옵니다</li><li>고객마다 <b>담당자를 지정</b>해 팀과 공유합니다</li></ul>
+      <div class="shot"><img data-src="https://dnalabs.kr/shot-call-list.png" alt="Re:Call 고객 목록 화면" decoding="async" width="520" height="1125"></div>
+    </div>
+    <div class="sv on" data-app="restore">
+      <span class="stag">Re:Store</span>
+      <h2>가맹점 발주와 정산</h2>
+      <p>여러 점포에 물건을 내보내는 본사가 씁니다.</p>
+      <ul><li>가맹점은 <b>계정 없이 링크로</b> 발주를 넣습니다</li><li>접수 → 확정 → 출고 → 완료. <b>미처리 건이 먼저</b> 보입니다</li><li>클릭 한번이면 <b>점포별 청구서</b>가 출력됩니다</li></ul>
+      <div class="shot"><img data-src="https://dnalabs.kr/shot-store-orders.png" alt="Re:Store 발주 목록 화면" decoding="async" width="520" height="1125"></div>
+    </div>
+    <div class="sv" data-app="reos">
+      <span class="stag">Re:O-S</span>
+      <h2>제작 외주관리</h2>
+      <p>여러 외주업체에 맡겨 제품을 만드는 제작기획사가 씁니다.</p>
+      <ul><li>문의부터 납품까지 <b>한 줄의 단계</b>로 봅니다</li><li>업체 견적을 <b>한 표에서 비교</b>합니다</li><li>발주하면 외주비가 원가에 들어가 <b>이익이 보입니다</b></li></ul>
+      <div class="shot"><img data-src="https://dnalabs.kr/shot-os-dash.png" alt="Re:O-S 오늘 화면" decoding="async" width="520" height="1125"></div>
+    </div>
+    <span class="fade"></span>
    </div>
   </div>
 </div>
@@ -1452,6 +1543,8 @@ function loadPick(){
   try{ const v=localStorage.getItem(PICK_KEY); if(APPS.includes(v)) return v }catch(e){}
   return APP_KEY;
 }
+/* 서비스마다 다른 색. 로그인 화면 오른쪽 판이 이 색을 씁니다. */
+const ACCENT = {rebind:'#3182F6', recall:'#2ED3A7', restore:'#FF7A1A', reos:'#A78BFA'};
 function setPick(app,remember){
   pickApp = APPS.includes(app) ? app : APP_KEY;
   if(remember!==false){ try{ localStorage.setItem(PICK_KEY,pickApp) }catch(e){} }
@@ -1482,6 +1575,18 @@ function setPick(app,remember){
   $('g-other').textContent = APP_KO[pickApp]+' 열기';
   const note=$('gateOther').querySelector('.othernote');
   if(note) note.innerHTML = APP_KO[pickApp]+' 는 <b>다른 주소</b>에서 엽니다.<br>회사 코드와 아이디는 여기와 같습니다.';
+  /* 오른쪽 판도 함께 넘깁니다 — 고른 것이 무엇인지 화면 절반으로 말해 줍니다 */
+  document.querySelectorAll('#gside .sv').forEach(function(v){
+    v.classList.toggle('on', v.dataset.app === pickApp);
+  });
+  var 소개판 = document.getElementById('gside');
+  if (소개판) 소개판.style.setProperty('--ac', ACCENT[pickApp] || ACCENT[APP_KEY]);
+  /* 화면이 넓을 때만 그림을 받습니다 — 폰에서는 감춰 두는 것이라 받을 이유가 없습니다.
+     넷을 한꺼번에 받아 두면 토글을 눌렀을 때 빈 자리가 잠깐 보이는 일이 없습니다. */
+  if (innerWidth > 880) document.querySelectorAll('#gside img[data-src]').forEach(function(im){
+    im.src = im.dataset.src; im.removeAttribute('data-src');
+  });
+
   $('gateMsg').textContent='';
 }
 
