@@ -1056,6 +1056,10 @@ nav.tabs button:active{opacity:.6}
   #gate .box.wide .gside ul{margin-bottom:0}
   #gate .box.wide .gside h2{font-size:1.2rem}
 }
+
+/* 로그인 화면의 DNA Labs 는 홈페이지 링크입니다 — 글자 모양은 그대로 둡니다 */
+#gate a.mark{text-decoration:none;color:inherit;-webkit-tap-highlight-color:transparent}
+#gate a.mark:active{opacity:.6}
 </style>
 </head>
 <body>
@@ -1064,7 +1068,8 @@ nav.tabs button:active{opacity:.6}
 <div id="gate" hidden>
   <div class="box wide">
    <div class="gleft">
-    <div class="mark"><i class="logo" role="img" aria-label="DNA Labs"></i><span>DNA <b>Labs</b></span></div>
+    <!-- 로그인 화면의 DNA Labs 는 회사 홈페이지로 갑니다. 네 앱이 같습니다. -->
+    <a class="mark" href="https://dnalabs.kr/" title="DNA Labs 홈페이지로"><i class="logo" role="img" aria-label="DNA Labs"></i><span>DNA <b>Labs</b></span></a>
     <!-- 누르면 고르기만 하고 넘어가지는 않습니다 —
          비밀번호를 엉뚱한 앱에 치는 일이 없어야 합니다. -->
     <div class="pick four i2" id="appPick" role="tablist" aria-label="어느 서비스로 들어갈지">
